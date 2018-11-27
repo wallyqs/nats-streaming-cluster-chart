@@ -21,7 +21,7 @@ cluster):
 
 ```console
 $ git clone https://github.com/wallyqs/nats-streaming-cluster-chart nats-streaming-cluster
-$ helm install nats-streaming-cluster -n my-release  --set natsUrl=nats://nats.nats-io.svc.cluster.local:4222 
+$ helm install nats-streaming -n my-release --set natsUrl=nats://nats.nats-io.svc.cluster.local:4222
 ```
 
 This will create 3 follower nodes plus an extra Pod which is
@@ -29,12 +29,11 @@ configured to be in bootstrapping mode, which will start as the leader
 of the Raft group as soon as it joins.
 
 ```console
-$ kubectl get pods --namespace default -l "app=nats-streaming-cluster,release=my-release"
+$ kubectl get pods --namespace default -l "app=nats-streaming,release=my-release"
 NAME                                          READY     STATUS    RESTARTS   AGE
-my-release-nats-streaming-cluster-0           1/1       Running   0          30s
-my-release-nats-streaming-cluster-1           1/1       Running   0          23s
-my-release-nats-streaming-cluster-2           1/1       Running   0          17s
-my-release-nats-streaming-cluster-bootstrap   1/1       Running   0          30s
+my-release-nats-streaming-0           1/1       Running   0          30s
+my-release-nats-streaming-1           1/1       Running   0          23s
+my-release-nats-streaming-2           1/1       Running   0          17s
 ```
 
 Note that in case the bootstrapping Pod fails then it will not be

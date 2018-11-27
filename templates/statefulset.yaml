@@ -1,10 +1,10 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ template "nats-streaming-cluster.fullname" . }}
+  name: {{ template "nats-streaming.fullname" . }}
   labels:
-    app: "{{ template "nats-streaming-cluster.name" . }}"
-    chart: "{{ template "nats-streaming-cluster.chart" . }}"
+    app: "{{ template "nats-streaming.name" . }}"
+    chart: "{{ template "nats-streaming.chart" . }}"
     release: {{ .Release.Name | quote }}
     heritage: {{ .Release.Service | quote }}
 spec:
@@ -17,13 +17,13 @@ spec:
     {{- end }}
   selector:
     matchLabels:
-      app: {{ template "nats-streaming-cluster.name" . }}
+      app: {{ template "nats-streaming.name" . }}
       release: {{ .Release.Name | quote }}
   template:
     metadata:
       labels:
-        app: "{{ template "nats-streaming-cluster.name" . }}"
-        chart: "{{ template "nats-streaming-cluster.chart" . }}"
+        app: "{{ template "nats-streaming.name" . }}"
+        chart: "{{ template "nats-streaming.chart" . }}"
         release: {{ .Release.Name }}
         {{- if .Values.podLabels }}
 {{ toYaml .Values.podLabels | indent 8 }}
@@ -63,7 +63,7 @@ spec:
             - topologyKey: "kubernetes.io/hostname"
               labelSelector:
                 matchLabels:
-                  app: "{{ template "nats-streaming-cluster.name" . }}"
+                  app: "{{ template "nats-streaming.name" . }}"
                   release: {{ .Release.Name | quote }}
       {{- else if eq .Values.antiAffinity "soft" }}
       affinity:
@@ -74,12 +74,12 @@ spec:
               topologyKey: kubernetes.io/hostname
               labelSelector:
                 matchLabels:
-                  app: "{{ template "nats-streaming-cluster.name" . }}"
+                  app: "{{ template "nats-streaming.name" . }}"
                   release: {{ .Release.Name | quote }}
       {{- end }}
       containers:
-      - name: {{ template "nats-streaming-cluster.name" . }}
-        image: {{ template "nats-streaming-cluster.image" . }}
+      - name: {{ template "nats-streaming.name" . }}
+        image: {{ template "nats-streaming.image" . }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         env:
         - name: POD_NAME
@@ -119,7 +119,7 @@ spec:
           "-hbf", "{{ .Values.hbFailCount }}",
 
           "--cluster_node_id", "$(POD_NAME)",
-          "--cluster_peers", "{{ template "nats-streaming-cluster.peers" . }}",
+          "--cluster_peers", "{{ template "nats-streaming.peers" . }}",
           "--store", "file",
           "--dir", "/nats/{{ tpl (.Values.clusterID) . }}/$(POD_NAME)/data",
           "--cluster_log_path", "/nats/{{ tpl (.Values.clusterID) . }}/$(POD_NAME)/raft",

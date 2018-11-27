@@ -2,7 +2,7 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "nats-streaming-cluster.name" -}}
+{{- define "nats-streaming.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
@@ -10,19 +10,19 @@ Expand the name of the chart.
 Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 */}}
-{{- define "nats-streaming-cluster.fullname" -}}
+{{- define "nats-streaming.fullname" -}}
 {{- $name := default .Chart.Name .Values.nameOverride -}}
 {{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
-{{- define "nats-streaming-cluster.chart" -}}
+{{- define "nats-streaming.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
 Return the proper NATS Streaming image name
 */}}
-{{- define "nats-streaming-cluster.image" -}}
+{{- define "nats-streaming.image" -}}
 {{- $registryName := .Values.image.registry -}}
 {{- $repositoryName := .Values.image.repository -}}
 {{- $tag := .Values.image.tag | toString -}}
@@ -46,8 +46,8 @@ Also, we can't use a single if because lazy evaluation is not an option
 Create a NATS Streaming cluster peers list string based on fullname, namespace, # of servers
 in a format like "host-1,host-2,host-3"
 */}}
-{{- define "nats-streaming-cluster.peers" -}}
-{{- $name := include "nats-streaming-cluster.fullname" . -}}
+{{- define "nats-streaming.peers" -}}
+{{- $name := include "nats-streaming.fullname" . -}}
 {{- $nats_streaming_cluster := dict "peers" (list) -}}
 {{- range $idx, $v := until (int .Values.replicaCount) }}
 {{- $noop := printf "%s-%d" $name $idx | append $nats_streaming_cluster.peers | set $nats_streaming_cluster "peers" -}}
