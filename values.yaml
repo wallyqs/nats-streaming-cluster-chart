@@ -1,13 +1,29 @@
-# Default values for nats-streaming-server.
+## Global Docker image registry
+## Please, note that this will override the image registry for all the images, including dependencies, configured to use the global value
+##
+# global:
+#   imageRegistry:
 
-# NATS Streaming will use a StatefulSet for the follower replicas
-# and then rely on a single Pod for bootstrapping.
-replicaCount: 3
-
+## NATS Streaming image
+##
 image:
+  registry: docker.io
   repository: nats-streaming
-  tag: 0.9.2
+  tag: 0.11.2
+  ## Specify a imagePullPolicy
+  ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
+  ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+  ##
   pullPolicy: IfNotPresent
+  ## Optionally specify an array of imagePullSecrets.
+  ## Secrets must be manually created in the namespace.
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+  ##
+  # pullSecrets:
+  #   - name: myRegistrKeySecretName
+
+## NATS Streaming replicas
+replicaCount: 3
 
 #
 # Streaming server configuration
@@ -17,7 +33,7 @@ image:
 clusterID: "test-cluster"
   
 # Connect to this external NATS Server URL
-natsUrl: "nats://nats:4222"
+natsSvc: "nats://nats:4222"
 
 # Max number of channels (0 for unlimited)
 maxChannels: 100
@@ -47,20 +63,15 @@ hbTimeout: 10s
 # Number of failed heartbeats before server closes the client connection
 hbFailCount: 330
 
-# Use for general debugging.  Enabling this will negatively affect performance.
+# Use for general debugging. Enabling this will negatively affect performance.
 debug: false
 
 # Do not normally set this as it will drastically decrease performance and generate
 # volumous logs.
 trace: false
 
-#
-# The streaming service is for monitoring and liveness probes
-#
-service:
-  name: nats-streaming-monitoring
-  type: ClusterIP
-  monitorPort: 8222
+# Use for raft related debugging
+cluster_raft_logging: false
 
 persistence:
   file:
@@ -109,15 +120,168 @@ persistence:
 
     #  On startup, number of channels that can be recovered in parallel
     parallelRecovery: 1
- 
+
+  volume:
+    # If false, emptyDir will be used as a volume.
+    enabled: false
+    # size: 10Gi
+    # storageClass: ""
+
+## NATS Pod Security Context
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+##
+securityContext:
+  enabled: false
+  fsGroup: 1001
+  runAsUser: 1001
+
+## NATS Streaming Node selector and tolerations for pod assignment
+## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#nodeselector
+## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#taints-and-tolerations-beta-feature
+##
+# nodeSelector: {"beta.kubernetes.io/arch": "amd64"}
+# tolerations: []
+
+## Use an alternate scheduler, e.g. "stork".
+## ref: https://kubernetes.io/docs/tasks/administer-cluster/configure-multiple-schedulers/
+##
+# schedulerName:
+
+## Pods anti-affinity
+## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+##
+antiAffinity: soft
+
+## Pod annotations
+## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+##
+podAnnotations: {}
+  ## Annotations for Promethues metrics
+  # prometheus.io/scrape: "true"
+  # prometheus.io/port: "7777"
+
+## Additional pod labels
+## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+##
+podLabels: {}
+
+## Update strategy, can be set to RollingUpdate or OnDelete by default.
+## https://kubernetes.io/docs/tutorials/stateful-application/basic-stateful-set/#updating-statefulsets
+statefulset:
+  updateStrategy: RollingUpdate
+  ## Partition update strategy
+  ## https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#partitions
+  # rollingUpdatePartition:
+
+
+## Configure resource requests and limits
+## ref: http://kubernetes.io/docs/user-guide/compute-resources/
+##
 resources: {}
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
   # limits:
-  #  cpu: 100m
-  #  memory: 128Mi
+  #   cpu: 100m
+  #   memory: 128Mi
   # requests:
-  #  cpu: 100m
-  #  memory: 128Mi
+  #   cpu: 100m
+  #   memory: 256Mi
+
+## Configure extra options for liveness and readiness probes
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/#configure-probes)
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 6
+  successThreshold: 1
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 6
+  successThreshold: 1
+
+## Client Authentication
+## ref: https://github.com/nats-io/nats-streaming-server#authorization
+##
+auth:
+  enabled: false
+  # user: nats_client
+  # password:
+  # token:
+  # secretName: "{{ .Release.Name }}-nats-secret"
+  # secretKey: "client-password"
+
+## Network pullPolicy
+## https://kubernetes.io/docs/concepts/services-networking/network-policies/
+##
+networkPolicy:
+  ## Enable creation of NetworkPolicy resources.
+  enabled: false
+
+## NATS Streaming svc used for monitoring
+## ref: https://github.com/nats-io/gnatsd#monitoring
+##
+monitoring:
+  service:
+    ## Kubernetes service type
+    type: ClusterIP
+    port: 8222
+    ## Specify the nodePort value for the LoadBalancer and NodePort service types.
+    ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
+    ##
+    # nodePort:
+    ## Provide any additional annotations which may be required. This can be used to
+    ## set the LoadBalancer service type to internal only.
+    ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#internal-load-balancer
+    ##
+    annotations: {}
+    ## Use loadBalancerIP to request a specific static IP,
+    ## otherwise leave blank
+    ##
+    loadBalancerIP:
+
+## Metrics / Prometheus NATS Exporter
+##
+## ref: https://github.com/nats-io/prometheus-nats-exporter
+metrics:
+  enabled: false
+  image:
+    registry: docker.io
+    repository: synadia/prometheus-nats-exporter
+    tag: 0.1.0
+    pullPolicy: IfNotPresent
+    ## Optionally specify an array of imagePullSecrets.
+    ## Secrets must be manually created in the namespace.
+    ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+    ##
+    # pullSecrets:
+    #   - myRegistrKeySecretName
+  ## Metrics exporter resource requests and limits
+  ## ref: http://kubernetes.io/docs/user-guide/compute-resources/
+  ##
+  # resources: {}
+  ## Metrics exporter port
+  port: 7777
+  ## Metrics exporter annotations
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "7777"
+  ## Metrics exporter flags
+  args:
+    # TODO: Uncomment these args once synadia/prometheus-nats-exporter adds NATS Streaming support
+    # - -serverz
+    # - -storez
+    # - -clientz
+    # - -channelz
+
+## Sidecars
+sidecars:
+  ## e.g.
+  # - name: your-image-name
+    # image: your-image
+    # imagePullPolicy: Always
+    # ports:
+    # - name: portname
+  #   containerPort: 1234
